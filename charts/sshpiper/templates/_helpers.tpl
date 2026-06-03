@@ -63,31 +63,81 @@ Create the name of the service account to use
 {{- end }}
 
 {{/*
-Image tag depends on required plugins
-We take full image if more than Kubernetes plugin is required.
+Whether the "full" image (all plugins) is required.
+True when image.full is set, vault or failtoban is enabled, or any enabled plugin
+is not part of the slim image (slim ships only kubernetes + workingdir).
+Outputs the string "true" or "false".
 */}}
-{{- define "sshpiper.imageTag" -}}
-{{- if .Values.sshpiper.failtoban.enabled }}
-{{- $tag := printf "full-%s" .Chart.AppVersion }}
-{{- default $tag .Values.image.tag }}
-{{- else }}
-{{- $tag := printf "%s" .Chart.AppVersion }}
-{{- default $tag .Values.image.tag }}
-{{- end }}
-{{- end }}
+{{- define "sshpiper.needsFull" -}}
+{{- $full := false -}}
+{{- if .Values.image.full -}}{{- $full = true -}}{{- end -}}
+{{- if .Values.sshpiper.vault.enabled -}}{{- $full = true -}}{{- end -}}
+{{- if .Values.sshpiper.failtoban.enabled -}}{{- $full = true -}}{{- end -}}
+{{- range .Values.sshpiper.plugins -}}
+{{- if .enabled -}}
+{{- if not (or (eq .name "kubernetes") (eq .name "workingdir")) -}}{{- $full = true -}}{{- end -}}
+{{- end -}}
+{{- end -}}
+{{- $full -}}
+{{- end -}}
 
 {{/*
-Container arguments
-Pass arguments to enable individual plugins or allow complete arguments override.
+Image tag: explicit override wins, otherwise the chart appVersion, prefixed with
+"full-" when the full image is required.
+*/}}
+{{- define "sshpiper.imageTag" -}}
+{{- if .Values.image.tag -}}
+{{- .Values.image.tag -}}
+{{- else if eq (include "sshpiper.needsFull" .) "true" -}}
+{{- printf "full-%s" .Chart.AppVersion -}}
+{{- else -}}
+{{- .Chart.AppVersion -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Whether any enabled yaml plugin needs a mounted inline config (config or existingConfigMap).
+Outputs "true" / "false".
+*/}}
+{{- define "sshpiper.yamlConfigEnabled" -}}
+{{- $found := false -}}
+{{- range .Values.sshpiper.plugins -}}
+{{- if and .enabled (eq .name "yaml") (or .config .existingConfigMap) -}}{{- $found = true -}}{{- end -}}
+{{- end -}}
+{{- $found -}}
+{{- end -}}
+
+{{/*
+Container arguments.
+Honour argsOverride, otherwise build the declarative plugin pipeline: each enabled
+plugin (in order) becomes its binary path plus its args, chained with "--".
+The yaml plugin gets "--config <mounted path>" when it carries a config.
+failtoban (legacy toggle) is appended last when enabled.
 */}}
 {{- define "sshpiper.containerArgs" -}}
-{{- if .Values.sshpiper.argsOverride }}
-{{- toYaml .Values.sshpiper.argsOverride }}
-{{- else }}
-- /sshpiperd/plugins/kubernetes
-{{- if .Values.sshpiper.failtoban.enabled }}
-- --
-- /sshpiperd/plugins/failtoban
-{{- end }}
-{{- end }}
-{{- end }}
+{{- if .Values.sshpiper.argsOverride -}}
+{{- toYaml .Values.sshpiper.argsOverride -}}
+{{- else -}}
+{{- $args := list -}}
+{{- $first := true -}}
+{{- range .Values.sshpiper.plugins -}}
+{{- if .enabled -}}
+{{- if not $first -}}{{- $args = append $args "--" -}}{{- end -}}
+{{- $first = false -}}
+{{- $args = append $args (printf "/sshpiperd/plugins/%s" .name) -}}
+{{- if and (eq .name "yaml") (or .config .existingConfigMap) -}}
+{{- $args = append $args "--config" -}}
+{{- $args = append $args "/etc/sshpiper/plugins/yaml/config.yaml" -}}
+{{- /* ConfigMap mounts are 0644; skip the plugin's own perm check */ -}}
+{{- $args = append $args "--no-check-perm" -}}
+{{- end -}}
+{{- range .args -}}{{- $args = append $args . -}}{{- end -}}
+{{- end -}}
+{{- end -}}
+{{- if .Values.sshpiper.failtoban.enabled -}}
+{{- if not $first -}}{{- $args = append $args "--" -}}{{- end -}}
+{{- $args = append $args "/sshpiperd/plugins/failtoban" -}}
+{{- end -}}
+{{- toYaml $args -}}
+{{- end -}}
+{{- end -}}

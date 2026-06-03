@@ -13,17 +13,82 @@ sshpiper:
   drop_hostkeys_message: false
   allowed_proxy_addresses: "" # comma-separated list of IP ranges in CIDR notation (e.g. "10.0.0.0/8,192.168.0.0/16"); only connections from these ranges are allowed to send a PROXY protocol header
   extraEnvVars: [] # Array of dict. with extra env. variables
-  argsOverride: [] # Array of strings with container arguments to override
+  argsOverride: [] # Array of strings with container arguments to override (bypasses the declarative `plugins` pipeline below)
+
+  # Declarative plugin pipeline.
+  # Plugins run in the listed order. When two or more are enabled they are chained
+  # (sshpiperd separates them with "--", so the next plugin handles auth the
+  # previous one did not resolve). Each entry:
+  #   name:    plugin binary under /sshpiperd/plugins
+  #            (kubernetes, yaml, fixed, docker, lua, username-router, workingdir)
+  #   enabled: include this plugin in the pipeline
+  #   args:    extra CLI flags passed to this plugin (array of strings)
+  #   config:  (yaml plugin only) inline config rendered to a ConfigMap and passed via --config.
+  #            Use the CA paths from `trustedUserCAKeys` and the `*_vault` fields for
+  #            certificate / Vault based routing.
+  #   existingConfigMap / existingConfigMapKey: mount an existing ConfigMap instead of `config`
+  plugins:
+    - name: kubernetes
+      enabled: true
+      args: []
+    # Example: route by which CA signed the client certificate (user/CA/host triple)
+    # and/or source keys from Vault. Enabling yaml automatically selects the "full" image.
+    # - name: yaml
+    #   enabled: true
+    #   args: []
+    #   config: |
+    #     version: "1.0"
+    #     pipes:
+    #     - from:
+    #         - username: "alice"
+    #           trusted_user_ca_keys: /etc/sshpiper/ca/team-a.pub
+    #       to:
+    #           host: host-a.internal:22
+    #           username: "world"
+    #           ignore_hostkey: true
+    #           private_key_vault: secret/data/ssh/upstream-key
+    #     - from:
+    #         - username: "alice"
+    #           trusted_user_ca_keys: /etc/sshpiper/ca/team-b.pub
+    #       to:
+    #           host: host-b.internal:22
+    #           username: "world"
+    #           ignore_hostkey: true
+
+  # CA public keys for certificate-based routing. Each entry is rendered into a
+  # Secret and mounted read-only at /etc/sshpiper/ca/<filename>; reference that
+  # path from a yaml plugin `trusted_user_ca_keys`.
+  trustedUserCAKeys: {}
+  #   team-a.pub: "ssh-ed25519 AAAA... ca-team-a"
+  #   team-b.pub: "ssh-ed25519 AAAA... ca-team-b"
+
+  # HashiCorp Vault integration (consumed by the yaml plugin `*_vault` fields).
+  # Sets VAULT_ADDR / VAULT_TOKEN / VAULT_CACHE_DURATION in the container.
+  vault:
+    enabled: false
+    addr: "" # VAULT_ADDR, e.g. https://vault.internal:8200
+    cacheDuration: "5m" # VAULT_CACHE_DURATION
+    # Provide the token either inline (rendered into a Secret, avoid in production)
+    # or via an existing Secret.
+    token: ""
+    existingSecret: ""
+    existingSecretKey: "token"
+
+  # Backwards-compatible failtoban monitor plugin. When enabled it is appended to
+  # the end of the plugin pipeline above and selects the "full" image.
   failtoban:
     enabled: false
     max_failures: 5
     ban_duration: 60m
 
 image:
-  repository: farmer1992/sshpiperd
+  repository: ghcr.io/datacosmos-br/sshpiperd
   pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
   tag: ""
+  # Force the "full" image (all plugins). Auto-enabled when a plugin other than
+  # kubernetes/workingdir, or vault, or failtoban is used.
+  full: false
 
 imagePullSecrets: []
 nameOverride: ""

@@ -64,6 +64,24 @@ spec:
         - name: SSHPIPERD_DROP_HOSTKEYS_MESSAGE
           value: "true"
         {{- end }}
+        {{- if .Values.sshpiper.vault.enabled }}
+        - name: VAULT_ADDR
+          value: {{ .Values.sshpiper.vault.addr | quote }}
+        {{- if .Values.sshpiper.vault.cacheDuration }}
+        - name: VAULT_CACHE_DURATION
+          value: {{ .Values.sshpiper.vault.cacheDuration | quote }}
+        {{- end }}
+        - name: VAULT_TOKEN
+          valueFrom:
+            secretKeyRef:
+              {{- if .Values.sshpiper.vault.existingSecret }}
+              name: {{ .Values.sshpiper.vault.existingSecret }}
+              key: {{ .Values.sshpiper.vault.existingSecretKey | default "token" }}
+              {{- else }}
+              name: {{ include "sshpiper.fullname" . }}-vault
+              key: token
+              {{- end }}
+        {{- end }}
         {{- with .Values.sshpiper.extraEnvVars }}
         {{- toYaml . | nindent 8 }}
         {{- end }}
@@ -73,6 +91,16 @@ spec:
         - name: sshpiper-server-key
           mountPath: "/serverkey/"
           readOnly: true
+        {{- if eq (include "sshpiper.yamlConfigEnabled" .) "true" }}
+        - name: sshpiper-yaml-config
+          mountPath: "/etc/sshpiper/plugins/yaml"
+          readOnly: true
+        {{- end }}
+        {{- if .Values.sshpiper.trustedUserCAKeys }}
+        - name: sshpiper-ca
+          mountPath: "/etc/sshpiper/ca"
+          readOnly: true
+        {{- end }}
         resources:
           {{- toYaml .Values.resources | nindent 10 }}
       volumes:
@@ -82,6 +110,27 @@ spec:
           items:
           - key: server_key
             path: ssh_host_key
+      {{- if eq (include "sshpiper.yamlConfigEnabled" .) "true" }}
+      - name: sshpiper-yaml-config
+        {{- $existing := "" }}
+        {{- range .Values.sshpiper.plugins }}
+        {{- if and .enabled (eq .name "yaml") .existingConfigMap }}{{ $existing = .existingConfigMap }}{{ end }}
+        {{- end }}
+        configMap:
+          {{- if $existing }}
+          name: {{ $existing }}
+          {{- else }}
+          name: {{ include "sshpiper.fullname" . }}-yaml
+          {{- end }}
+          items:
+          - key: config.yaml
+            path: config.yaml
+      {{- end }}
+      {{- if .Values.sshpiper.trustedUserCAKeys }}
+      - name: sshpiper-ca
+        secret:
+          secretName: {{ include "sshpiper.fullname" . }}-ca
+      {{- end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

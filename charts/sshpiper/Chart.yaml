@@ -1,15 +1,18 @@
 apiVersion: v2
 name: sshpiper
-description: The missing reverse proxy for ssh scp, username based SSH Reverse Proxy 
+description: The missing reverse proxy for ssh scp, username based SSH Reverse Proxy
 type: application
-version: 0.4.6
-appVersion: "v1.5.0"
+version: 0.5.0-dc1
+appVersion: "v1.5.4-dc1"
 
 sources:
+  - https://github.com/datacosmos-br/sshpiper
+  - https://github.com/datacosmos-br/sshpiper-chart
   - https://github.com/tg123/sshpiper
-  - https://github.com/tg123/sshpiper-chart
 
 maintainers:
+  - name: Datacosmos
+    url: https://github.com/datacosmos-br
   - name: Boshi Lian
     email: farmer1992@gmail.com
     url: https://github.com/tg123
@@ -19,3 +22,5 @@ keywords:
   - "scp"
   - "reverse proxy"
   - "sshpiper"
+  - "ca"
+  - "vault"
