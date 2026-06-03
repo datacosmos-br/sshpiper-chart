@@ -1,0 +1,35 @@
+charts/sshpiper/Chart.yaml
+  s_9d5ba0cef5a6fd::t_ec0e2cf044c90b 3,5-6,9-10,14-15,25-26
+charts/sshpiper/templates/_helpers.tpl
+  s_9d5ba0cef5a6fd::t_ef6ac22ed06b77 66-86,89-96,99-115,118-130,133-143
+  s_9d5ba0cef5a6fd::t_27b489aac390cf 131-132
+charts/sshpiper/templates/secret-vault.yaml
+  s_9d5ba0cef5a6fd::t_5e29f8a4d46a7e 1-11
+charts/sshpiper/templates/deployment.yaml
+  s_9d5ba0cef5a6fd::t_ca2c1fd72c03ea 67-84
+  s_9d5ba0cef5a6fd::t_84f4b9ec28c74f 94-103,113-133
+charts/sshpiper/templates/secret-ca.yaml
+  s_9d5ba0cef5a6fd::t_4a3b4b70ab8560 1-14
+charts/sshpiper/values.yaml
+  s_9d5ba0cef5a6fd::t_bc8c9457c720de 16-78,85,89-91
+charts/sshpiper/README.md
+  s_9d5ba0cef5a6fd::t_147271a0fea4d0 1,3-8,15-23,25-47,50-80
+charts/sshpiper/templates/configmap-yaml.yaml
+  s_9d5ba0cef5a6fd::t_4cf64970d7383c 1-13
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "195a258f123498e0c1896ecda7892cffc8a77080",
+  "prompts": {},
+  "sessions": {
+    "s_9d5ba0cef5a6fd": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "09cf08fd-f892-4b7c-a650-2dd226883c3f",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Zed <hi@zed.dev>"
+    }
+  }
+}
