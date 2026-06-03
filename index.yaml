@@ -29,4 +29,32 @@ entries:
     urls:
     - https://github.com/datacosmos-br/sshpiper-chart/releases/download/sshpiper-0.5.0-dc1/sshpiper-0.5.0-dc1.tgz
     version: 0.5.0-dc1
-generated: "2026-06-02T23:56:05.328281266-03:00"
+  - apiVersion: v2
+    appVersion: v1.5.4-dc1
+    created: "2026-06-03T03:09:28.993942069Z"
+    description: The missing reverse proxy for ssh scp, username based SSH Reverse
+      Proxy
+    digest: f57d805144376be2581d95fc3b4ac1e90ec48483a09f6d87a794c2be29485071
+    keywords:
+    - ssh
+    - scp
+    - reverse proxy
+    - sshpiper
+    - ca
+    - vault
+    maintainers:
+    - name: Datacosmos
+      url: https://github.com/datacosmos-br
+    - email: farmer1992@gmail.com
+      name: Boshi Lian
+      url: https://github.com/tg123
+    name: sshpiper
+    sources:
+    - https://github.com/datacosmos-br/sshpiper
+    - https://github.com/datacosmos-br/sshpiper-chart
+    - https://github.com/tg123/sshpiper
+    type: application
+    urls:
+    - https://github.com/datacosmos-br/sshpiper-chart/releases/download/sshpiper-0.5.0-dc1/sshpiper-0.5.0-dc1.tgz
+    version: 0.5.0-dc1
+generated: "2026-06-03T03:09:28.99395856Z"
