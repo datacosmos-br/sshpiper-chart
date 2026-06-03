@@ -1,0 +1,13 @@
+{{- range .Values.sshpiper.plugins }}
+{{- if and .enabled (eq .name "yaml") .config (not .existingConfigMap) }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "sshpiper.fullname" $ }}-yaml
+  labels:
+    {{- include "sshpiper.labels" $ | nindent 4 }}
+data:
+  config.yaml: |
+    {{- .config | nindent 4 }}
+{{- end }}
+{{- end }}
